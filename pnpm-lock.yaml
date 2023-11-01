@@ -9,6 +9,7 @@ specifiers:
   '@types/jest': ^29.5.7
   '@types/js-yaml': ^4.0.8
   '@types/node': ^20.8.10
+  '@types/semver': ^7.5.4
   '@types/shelljs': ^0.8.14
   '@typescript-eslint/eslint-plugin': ^6.5.0
   '@typescript-eslint/parser': ^6.5.0
@@ -23,6 +24,7 @@ specifiers:
   jest: ^29.7.0
   js-yaml: ^4.1.0
   prettier: ^3.0.0
+  semver: ^7.5.4
   shelljs: ^0.8.5
   ts-jest: ^29.1.1
   ts-node: ^10.9.1
@@ -36,6 +38,7 @@ dependencies:
   cmd-ts: 0.13.0
   glob: 10.3.10
   js-yaml: 4.1.0
+  semver: 7.5.4
   shelljs: 0.8.5
   zod: 3.22.4
 
@@ -46,6 +49,7 @@ devDependencies:
   '@types/jest': 29.5.7
   '@types/js-yaml': 4.0.8
   '@types/node': 20.8.10
+  '@types/semver': 7.5.4
   '@types/shelljs': 0.8.14
   '@typescript-eslint/eslint-plugin': 6.9.1_6zldm7dnffi7r2a7lc5c4oleyu
   '@typescript-eslint/parser': 6.9.1_i3vkbg2fztj7jno7sh3heeojya

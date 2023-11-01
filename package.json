@@ -21,6 +21,7 @@
     "cmd-ts": "^0.13.0",
     "glob": "^10.3.10",
     "js-yaml": "^4.1.0",
+    "semver": "^7.5.4",
     "shelljs": "^0.8.5",
     "zod": "^3.22.4"
   },
@@ -31,6 +32,7 @@
     "@types/jest": "^29.5.7",
     "@types/js-yaml": "^4.0.8",
     "@types/node": "^20.8.10",
+    "@types/semver": "^7.5.4",
     "@types/shelljs": "^0.8.14",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",

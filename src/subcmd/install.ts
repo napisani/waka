@@ -39,7 +39,7 @@ function parsePackageAndVersion(packageName: string): {
 
 function lookupDefaultVersion(
   packageName: string,
-  requestedVersion: string,
+  requestedVersion: string | null,
   wakaRoot: Root
 ): string {
   let version = wakaRoot.rootDepRegistry[packageName];

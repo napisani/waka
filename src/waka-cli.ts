@@ -7,8 +7,9 @@ import {
   string,
   subcommands,
 } from 'cmd-ts';
-import { rootDir } from './const';
+import { identifyRootDir } from './file';
 import { importFn, applyFn, initFn, installFn } from './subcmd';
+const rootDir = identifyRootDir();
 const scriptCmd = 'pnpm run waka';
 
 const initCmd = command({
@@ -24,7 +25,19 @@ const initCmd = command({
 const importCmd = command({
   name: 'import',
   description: 'Import dependencies from package.json into waka.yaml files',
-  args: {},
+  args: {
+    registerAll: flag({
+      description: 'register all dependencies in root registry',
+      short: 'r',
+      long: 'register-all',
+    }),
+    acceptLatest: flag({
+      description:
+        'for all dependencies of the same name but different versions in the monorepo, assign to the latest defined version',
+      short: 'l',
+      long: 'accept-latest',
+    }),
+  },
   handler: async () => {
     process.chdir(rootDir);
     await importFn(rootDir);

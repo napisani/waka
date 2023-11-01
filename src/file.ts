@@ -47,4 +47,4 @@ export function identifyRootDir(
   }
   return identifyRootDir(path.join(currntDir, '..'), currntDir);
 }
-export const rootDir = identifyRootDir();
+// export const rootDir = identifyRootDir();

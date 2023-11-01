@@ -12,40 +12,62 @@ import {
   mapNPMPackageDetails,
   writeWakaPackage,
   writeWakaRoot,
-} from './package';
-import type { NPMDepType, Package, PackageDetail, Root } from './schema';
-import { ROOT_REGISTRY_VERSION, defaultWakaPackage } from './schema';
+} from '../package';
+import type { NPMDepType, Package, PackageDetail, Root } from '../schema';
+import { ROOT_REGISTRY_VERSION, defaultWakaPackage } from '../schema';
+import semverSort from 'semver/functions/sort';
+import semverCoerce from 'semver/functions/coerce';
 
 async function promptForRootRegVersionSelect(
   name: string,
-  detailsByNameAndVersion: Record<string, PackageDetail[]>
+  detailsByNameAndVersion: Record<string, PackageDetail[]>,
+  opts: ImportOptions
 ): Promise<{ rootRegVersion: string | null; changeAllToRootVersion: boolean }> {
-  const rootRegVersion = await select<string | null>({
-    message: `Select which version of ${name} that you want to be pinned as the root registry version:`,
-    choices: [
-      { name: 'do not register to root registry', value: null },
-      ...Object.values(detailsByNameAndVersion).map((details) => {
-        const [detail] = details;
-        return {
-          name: detail!.version,
-          value: detail!.version,
-          description: `count: (${details.length})`,
-        };
-      }),
-    ],
-  });
-  let changeAllToRootVersion = false;
-  if (rootRegVersion) {
-    changeAllToRootVersion = await select<boolean>({
-      message: `Do you want to change all versions of ${name} to be the root registry version?`,
+  const selections: {
+    rootRegVersion: string | null;
+    changeAllToRootVersion: boolean;
+  } = { rootRegVersion: null, changeAllToRootVersion: false };
+  if (opts.acceptLatest) {
+    const sortedVersions = semverSort(
+      Object.values(detailsByNameAndVersion).map(
+        (details) => semverCoerce(details[0]!.version)!
+      ),
+      { loose: true }
+    );
+    const latestVersion = sortedVersions[sortedVersions.length - 1]!;
+    selections.rootRegVersion = latestVersion.raw;
+  } else {
+    selections.rootRegVersion = await select<string | null>({
+      message: `Select which version of ${name} that you want to be pinned as the root registry version:`,
       choices: [
-        { name: 'yes', value: true },
-        { name: 'no', value: false },
+        { name: 'do not register to root registry', value: null },
+        ...Object.values(detailsByNameAndVersion).map((details) => {
+          const [detail] = details;
+          return {
+            name: detail.version,
+            value: detail.version,
+            description: `count: (${details.length})`,
+          };
+        }),
       ],
     });
   }
 
-  return { rootRegVersion, changeAllToRootVersion };
+  if (selections.rootRegVersion) {
+    if (opts.registerAll) {
+      selections.changeAllToRootVersion = true;
+    } else {
+      selections.changeAllToRootVersion = await select<boolean>({
+        message: `Do you want to change all versions of ${name} to be the root registry version?`,
+        choices: [
+          { name: 'yes', value: true },
+          { name: 'no', value: false },
+        ],
+      });
+    }
+  }
+
+  return selections;
   // const detail = Object.values(detailsByNameAndVersion)[0]!;
   // const answer = await Promise.resolve(detail[0]!.version);
   // return answer;
@@ -54,7 +76,8 @@ async function promptForRootRegVersionSelect(
 async function organizeDependencies(
   wakaRoot: Root,
   wakaPackages: Record<string, Package>,
-  npmPackageDetails: PackageDetail[]
+  npmPackageDetails: PackageDetail[],
+  opts: ImportOptions
 ): Promise<{ wakaRoot: Root; wakaPackages: Record<string, Package> }> {
   function adjustWakaRootRegistryVersion(
     name: string,
@@ -96,7 +119,7 @@ async function organizeDependencies(
     ]);
     if (Object.keys(detailsByNameAndVersion).length === 1) {
       const [detail] = detailForName;
-      const { version } = detail!;
+      const { version } = detail;
       wakaRoot = adjustWakaRootRegistryVersion(name, version);
       for (const detailToFix of detailForName) {
         const { packageName } = detailToFix;
@@ -104,12 +127,16 @@ async function organizeDependencies(
           packageName,
           name,
           ROOT_REGISTRY_VERSION,
-          detail!.type
+          detail.type
         );
       }
     } else {
       const { rootRegVersion, changeAllToRootVersion } =
-        await promptForRootRegVersionSelect(name, detailsByNameAndVersion);
+        await promptForRootRegVersionSelect(
+          name,
+          detailsByNameAndVersion,
+          opts
+        );
       if (rootRegVersion) {
         wakaRoot = adjustWakaRootRegistryVersion(name, rootRegVersion);
         detailForName.forEach((detail) => {
@@ -142,14 +169,18 @@ async function organizeDependencies(
     wakaPackages,
   });
 }
+export interface ImportOptions {
+  acceptLatest?: boolean;
+  registerAll?: boolean;
+}
 
-export async function importFn(cwd: string) {
+export async function importFn(cwd: string, opts: ImportOptions) {
   const wakaRoot = await getWakaRoot(cwd);
   const wakaPackages = await getWakaPackages(cwd);
 
   const npmPackageDetails = await getNPMPackageDetails(cwd);
   const { wakaRoot: newWakaRoot, wakaPackages: newWakaPackages } =
-    await organizeDependencies(wakaRoot, wakaPackages, npmPackageDetails);
+    await organizeDependencies(wakaRoot, wakaPackages, npmPackageDetails, opts);
   const rootFile = await getWakaRootFile(cwd, { ensureExists: false });
   const rootPackageJson = await getNPMPackageFile(cwd);
   const rootPackageName = getNPMPackageName(rootPackageJson);
@@ -165,6 +196,6 @@ export async function importFn(cwd: string) {
     await writeWakaPackage(wakaPackageYaml, newWakaPackages[p]!);
   }
 
-  yaml.dump(newWakaRoot);
+  await writeWakaRoot(rootFile, newWakaRoot);
   console.log('all dependencies have been imported to waka yaml files');
 }
