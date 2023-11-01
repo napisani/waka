@@ -233,10 +233,15 @@ export async function getNPMPackageDetails(
 ) {
   const pkgJsons = await getNPMPackageFiles(cwd, {
     ensureExists: true,
-    includeRoot: opts?.includeRoot,
+    includeRoot: false,
   });
-  const rootPkgJsons = await getRootNPMPackageFile(cwd, { ensureExists: true });
-  const promises = [...pkgJsons, rootPkgJsons].flatMap(async (p) => {
+  if (opts?.includeRoot) {
+    const rootPkgJsons = await getRootNPMPackageFile(cwd, {
+      ensureExists: true,
+    });
+    pkgJsons.push(rootPkgJsons);
+  }
+  const promises = pkgJsons.flatMap(async (p) => {
     const details: PackageDetail[] = [];
     const pkgJsonData = await getNPMPackageJsonContents(p);
     npmDepTypes.forEach((depType: NPMDepType) => {

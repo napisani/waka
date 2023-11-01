@@ -134,67 +134,57 @@ describe('Package Read', () => {
     });
   });
 
-  // describe('getNPMPackageFiles', () => {
-  //   it('should return an array of package.json files', async () => {
-  //     const cwd = '/Users/nick/code/waka';
+  describe('getNPMPackageFiles', () => {
+    it('should return an array of package.json files', async () => {
+      const result = await getNPMPackageFiles(mockRepoDir);
 
-  //     const result = await getNPMPackageFiles(cwd);
+      const expected = [...packageRelativePathes]
+        .map((p) => path.join(mockRepoDir, p, 'package.json'))
+        .sort();
+      expect(result).toEqual(expected);
+    });
 
-  //     expect(result).toEqual([
-  //       '/Users/nick/code/waka/packages/example-package/package.json',
-  //     ]);
-  //   });
+    it('should return an array of package.json files including root', async () => {
+      const result = (
+        await getNPMPackageFiles(mockRepoDir, {
+          includeRoot: true,
+        })
+      ).sort();
 
-  //   it('should return an array of package.json files including root', async () => {
-  //     const cwd = '/Users/nick/code/waka';
+      const expected = [...packageRelativePathes, '']
+        .map((p) => path.join(mockRepoDir, p, 'package.json'))
+        .sort();
+      expect(result).toEqual(expected);
+    });
+  });
 
-  //     const result = await getNPMPackageFiles(cwd, { includeRoot: true });
+  describe('getNPMPackageJsonContents', () => {
+    it('should return the contents of the package.json file as an object', async () => {
+      const packageDir = path.join(mockRepoDir, 'apps/web');
+      const result = await getNPMPackageJsonContents(packageDir);
 
-  //     expect(result).toEqual([
-  //       '/Users/nick/code/waka/packages/example-package/package.json',
-  //       '/Users/nick/code/waka/package.json',
-  //     ]);
-  //   });
-  // });
+      expect(result).toBeTruthy();
+      expect(result.name).toEqual('web');
+      expect(result).toHaveProperty('dependencies');
+      expect(result).toHaveProperty('devDependencies');
+    });
+  });
 
-  // describe('getNPMPackageJsonContents', () => {
-  //   it('should return the contents of the package.json file as an object', async () => {
-  //     const packageDir = '/Users/nick/code/waka/packages/example-package';
+  describe('getRootNPMPackageFile', () => {
+    it('should return the path of the root package.json file', async () => {
+      const result = await getRootNPMPackageFile(mockRepoDir);
 
-  //     const result = await getNPMPackageJsonContents(packageDir);
-
-  //     expect(result).toEqual({
-  //       name: 'example-package',
-  //       version: '1.0.0',
-  //       dependencies: {
-  //         lodash: '1.0.0',
-  //       },
-  //       devDependencies: {},
-  //     });
-  //   });
-  // });
-
-  // describe('getRootNPMPackageFile', () => {
-  //   it('should return the path of the root package.json file', async () => {
-  //     const cwd = '/Users/nick/code/waka';
-
-  //     const result = await getRootNPMPackageFile(cwd);
-
-  //     expect(result).toEqual('/Users/nick/code/waka/package.json');
-  //   });
-  // });
+      expect(result).toEqual(
+        path.resolve(path.join(mockRepoDir, 'package.json'))
+      );
+    });
+  });
 
   // describe('getWakaRoot', () => {
   //   it('should return the parsed contents of the waka-root.yaml file', async () => {
   //     const cwd = '/Users/nick/code/waka';
 
   //     const result = await getWakaRoot(cwd);
-
-  //     expect(result).toEqual({
-  //       name: 'example-project',
-  //       version: '1.0.0',
-  //       packages: ['example-package'],
-  //     });
   //   });
   // });
 
@@ -232,127 +222,54 @@ describe('Package Read', () => {
   //   });
   // });
 
-  // describe('getNPMPackageDetails', () => {
-  //   it('should return an array of npm package details', async () => {
-  //     const cwd = '/Users/nick/code/waka';
+  describe('getNPMPackageDetails', () => {
+    it('should return an array of npm package details', async () => {
+      const result = await getNPMPackageDetails(mockRepoDir, {
+        includeRoot: false,
+      });
 
-  //     const result = await getNPMPackageDetails(cwd);
+      const expected = {
+        name: 'next',
+        packageName: 'web',
+        type: 'dependencies',
+        packagePath: path.resolve(
+          path.join(mockRepoDir, 'apps/web/package.json')
+        ),
+        version: '^13.4.19',
+      };
 
-  //     expect(result).toEqual([
-  //       {
-  //         name: 'lodash',
-  //         version: '1.0.0',
-  //         type: 'dependencies',
-  //         packagePath:
-  //           '/Users/nick/code/waka/packages/example-package/package.json',
-  //         packageName: 'example-package',
-  //       },
-  //     ]);
-  //   });
+      const notExpected = {
+        name: 'eslint',
+        packageName: 'mock-repo',
+        type: 'devDependencies',
+        packagePath: path.resolve(path.join(mockRepoDir, 'package.json')),
+        version: '^8.48.0',
+      };
+      expect(
+        result.map((r) => JSON.stringify(r, Object.keys(r).sort()))
+      ).toContain(JSON.stringify(expected, Object.keys(expected).sort()));
+      expect(
+        result.map((r) => JSON.stringify(r, Object.keys(r).sort()))
+      ).not.toContain(
+        JSON.stringify(notExpected, Object.keys(notExpected).sort())
+      );
+    });
 
-  //   it('should return an array of npm package details including root', async () => {
-  //     const cwd = '/Users/nick/code/waka';
+    it('should return an array of npm package details including root', async () => {
+      const cwd = '/Users/nick/code/waka';
 
-  //     const result = await getNPMPackageDetails(cwd, { includeRoot: true });
+      const expected = {
+        name: 'eslint',
+        packageName: 'mock-repo',
+        type: 'devDependencies',
+        packagePath: path.resolve(path.join(mockRepoDir, 'package.json')),
+        version: '^8.48.0',
+      };
+      const result = await getNPMPackageDetails(cwd, { includeRoot: true });
 
-  //     expect(result).toEqual([
-  //       {
-  //         name: 'lodash',
-  //         version: '1.0.0',
-  //         type: 'dependencies',
-  //         packagePath:
-  //           '/Users/nick/code/waka/packages/example-package/package.json',
-  //         packageName: 'example-package',
-  //       },
-  //       {
-  //         name: 'lodash',
-  //         version: '1.0.0',
-  //         type: 'dependencies',
-  //         packagePath: '/Users/nick/code/waka/package.json',
-  //         packageName: 'example-project',
-  //       },
-  //     ]);
-  //   });
-  // });
-
-  // describe('getDetailKey', () => {
-  //   it('should return the key string for a given package detail', () => {
-  //     const detail = {
-  //       name: 'lodash',
-  //       version: '1.0.0',
-  //       type: 'dependencies',
-  //       packagePath:
-  //         '/Users/nick/code/waka/packages/example-package/package.json',
-  //       packageName: 'example-package',
-  //     };
-
-  //     const result = getDetailKey(detail, ['name', 'version']);
-
-  //     expect(result).toEqual('lodash|1.0.0');
-  //   });
-  // });
-
-  // describe('mapNPMPackageDetails', () => {
-  //   it('should return a record of npm package details grouped by a given key', () => {
-  //     const details = [
-  //       {
-  //         name: 'lodash',
-  //         version: '1.0.0',
-  //         type: 'dependencies',
-  //         packagePath:
-  //           '/Users/nick/code/waka/packages/example-package/package.json',
-  //         packageName: 'example-package',
-  //       },
-  //       {
-  //         name: 'react',
-  //         version: '2.0.0',
-  //         type: 'dependencies',
-  //         packagePath:
-  //           '/Users/nick/code/waka/packages/example-package/package.json',
-  //         packageName: 'example-package',
-  //       },
-  //       {
-  //         name: 'lodash',
-  //         version: '1.0.0',
-  //         type: 'devDependencies',
-  //         packagePath:
-  //           '/Users/nick/code/waka/packages/example-package/package.json',
-  //         packageName: 'example-package',
-  //       },
-  //     ];
-
-  //     const result = mapNPMPackageDetails(details, ['name']);
-
-  //     expect(result).toEqual({
-  //       lodash: [
-  //         {
-  //           name: 'lodash',
-  //           version: '1.0.0',
-  //           type: 'dependencies',
-  //           packagePath:
-  //             '/Users/nick/code/waka/packages/example-package/package.json',
-  //           packageName: 'example-package',
-  //         },
-  //         {
-  //           name: 'lodash',
-  //           version: '1.0.0',
-  //           type: 'devDependencies',
-  //           packagePath:
-  //             '/Users/nick/code/waka/packages/example-package/package.json',
-  //           packageName: 'example-package',
-  //         },
-  //       ],
-  //       react: [
-  //         {
-  //           name: 'react',
-  //           version: '2.0.0',
-  //           type: 'dependencies',
-  //           packagePath:
-  //             '/Users/nick/code/waka/packages/example-package/package.json',
-  //           packageName: 'example-package',
-  //         },
-  //       ],
-  //     });
-  //   });
-  // });
+      expect(
+        result.map((r) => JSON.stringify(r, Object.keys(r).sort()))
+      ).toContain(JSON.stringify(expected, Object.keys(expected).sort()));
+    });
+  });
 });
