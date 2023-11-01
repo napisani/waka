@@ -1,0 +1,19 @@
+
+# Node.js
+node_modules/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs and editors
+/.vscode
+/.idea
+/.vs
+
+# Build output
+/dist
+/out
+
+# Testing
+/coverage
+
