@@ -17,6 +17,7 @@ import {
   getNPMPackageDetails,
   getDetailKey,
   mapNPMPackageDetails,
+  parseWorkspaceDir,
 } from '../../src/package/read';
 const packageRelativePathes = [
   'apps/web',
@@ -180,6 +181,29 @@ describe('Package Read', () => {
     });
   });
 
+  describe('parseWorkspaceDir', () => {
+    it('should return the workspace based on cwd', async () => {
+      const result = await parseWorkspaceDir(
+        mockRepoDir,
+        path.join(mockRepoDir, 'apps/web')
+      );
+      expect(result).toEqual(path.join(mockRepoDir, 'apps/web'));
+    });
+
+    it('should return the workspace based package name', async () => {
+      const result = await parseWorkspaceDir(mockRepoDir, mockRepoDir, 'web');
+      expect(result).toEqual(path.join(mockRepoDir, 'apps/web'));
+    });
+
+    it('should return the workspace based package path', async () => {
+      const result = await parseWorkspaceDir(
+        mockRepoDir,
+        mockRepoDir,
+        'apps/web'
+      );
+      expect(result).toEqual(path.join(mockRepoDir, 'apps/web'));
+    });
+  });
   // describe('getWakaRoot', () => {
   //   it('should return the parsed contents of the waka-root.yaml file', async () => {
   //     const cwd = '/Users/nick/code/waka';
@@ -227,8 +251,10 @@ describe('Package Read', () => {
       const result = await getNPMPackageDetails(mockRepoDir, {
         includeRoot: false,
       });
+      console.log('hiiii');
+      console.log(result.map((p) => p.packageName));
 
-      const expected = {
+      const expectedFromApp = {
         name: 'next',
         packageName: 'web',
         type: 'dependencies',
@@ -238,6 +264,14 @@ describe('Package Read', () => {
         version: '^13.4.19',
       };
 
+      const notExpectedFromRoot = {
+        name: 'prettier',
+        version: '^3.0.3',
+        type: 'devDependencies',
+        packagePath: path.join(mockRepoDir, 'package.json'),
+        packageName: 'mock-repo',
+      };
+
       const notExpected = {
         name: 'eslint',
         packageName: 'mock-repo',
@@ -245,9 +279,20 @@ describe('Package Read', () => {
         packagePath: path.resolve(path.join(mockRepoDir, 'package.json')),
         version: '^8.48.0',
       };
+
       expect(
         result.map((r) => JSON.stringify(r, Object.keys(r).sort()))
-      ).toContain(JSON.stringify(expected, Object.keys(expected).sort()));
+      ).toContain(
+        JSON.stringify(expectedFromApp, Object.keys(expectedFromApp).sort())
+      );
+      expect(
+        result.map((r) => JSON.stringify(r, Object.keys(r).sort()))
+      ).not.toContain(
+        JSON.stringify(
+          notExpectedFromRoot,
+          Object.keys(notExpectedFromRoot).sort()
+        )
+      );
       expect(
         result.map((r) => JSON.stringify(r, Object.keys(r).sort()))
       ).not.toContain(
@@ -256,8 +301,6 @@ describe('Package Read', () => {
     });
 
     it('should return an array of npm package details including root', async () => {
-      const cwd = '/Users/nick/code/waka';
-
       const expected = {
         name: 'eslint',
         packageName: 'mock-repo',
@@ -265,7 +308,9 @@ describe('Package Read', () => {
         packagePath: path.resolve(path.join(mockRepoDir, 'package.json')),
         version: '^8.48.0',
       };
-      const result = await getNPMPackageDetails(cwd, { includeRoot: true });
+      const result = await getNPMPackageDetails(mockRepoDir, {
+        includeRoot: true,
+      });
 
       expect(
         result.map((r) => JSON.stringify(r, Object.keys(r).sort()))

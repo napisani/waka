@@ -13,6 +13,7 @@ import type {
   PackageJsonContents,
   Root,
 } from '../schema';
+import { isMonoRepoRoot, isSubDirOfMonoRepo } from '../file';
 const packageDirToNameCache = new Map<string, string>();
 const packageNameToDirCache = new Map<string, string>();
 
@@ -29,31 +30,31 @@ function toDirectoryOnly(p: string): string {
 
 export async function getPackagePathsFromPnpmSelector(
   selector: string,
-  cwd: string
+  repoRootDir: string
 ): Promise<string[]> {
-  const projects = await readProjects(cwd, [
-    parsePackageSelector(selector, cwd),
+  const projects = await readProjects(repoRootDir, [
+    parsePackageSelector(selector, repoRootDir),
   ]);
   return Object.keys(projects.selectedProjectsGraph).map((p) =>
-    path.relative(cwd, p).replaceAll('\\', '/')
+    path.relative(repoRootDir, p).replaceAll('\\', '/')
   );
 }
 
 export async function getNPMPackageDir(
   packageName: string,
-  cwd: string
+  repoRootDir: string
 ): Promise<string> {
   if (packageNameToDirCache.has(packageName)) {
     return packageNameToDirCache.get(packageName)!;
   }
   const packageDirRelative = await getPackagePathsFromPnpmSelector(
     packageName,
-    cwd
+    repoRootDir
   );
   if (!packageDirRelative || packageDirRelative.length === 0) {
     throw new Error(`Package ${packageName} does not exist.`);
   }
-  const dir = toDirectoryOnly(path.join(cwd, packageDirRelative[0]!));
+  const dir = toDirectoryOnly(path.join(repoRootDir, packageDirRelative[0]!));
   const packageDir = path.resolve(dir);
   packageNameToDirCache.set(packageName, packageDir);
   packageDirToNameCache.set(packageDir, packageName);
@@ -80,10 +81,10 @@ export function getNPMPackageName(packageJsonFile: string): string {
 }
 
 export async function getAllPackageDirectories(
-  cwd: string,
+  repoRootDir: string,
   opts?: { includeRoot: boolean }
 ) {
-  const packageDirs = await getPackagePathsFromPnpmSelector('*', cwd);
+  const packageDirs = await getPackagePathsFromPnpmSelector('*', repoRootDir);
   if (opts?.includeRoot === false) {
     return packageDirs.filter((p) => p !== '' && p !== '.' && p !== './');
   }
@@ -119,10 +120,10 @@ export async function getNPMPackageFile(
 }
 
 export function getWakaRootFile(
-  cwd: string,
+  repoRootDir: string,
   opts?: { ensureExists?: boolean }
 ): Promise<string> {
-  const rootFile = path.join(cwd, 'waka-root.yaml');
+  const rootFile = path.join(repoRootDir, 'waka-root.yaml');
   if (opts?.ensureExists && !fs.existsSync(rootFile)) {
     throw new Error(`File ${rootFile} does not exist.`);
   }
@@ -130,19 +131,19 @@ export function getWakaRootFile(
 }
 
 export async function getWakaPackageFiles(
-  cwd: string,
+  repoRootDir: string,
   opts?: { ensureExists?: boolean; includeRoot?: boolean }
 ) {
-  const packageDirs = await getAllPackageDirectories(cwd, {
+  const packageDirs = await getAllPackageDirectories(repoRootDir, {
     includeRoot: false,
   });
   const pkgFilePromises = packageDirs.map(async (p) => {
-    const f = await getWakaPackageFile(path.join(cwd, p), opts);
+    const f = await getWakaPackageFile(path.join(repoRootDir, p), opts);
     return f;
   });
   const allPackageFiles = await Promise.all(pkgFilePromises);
   if (opts?.includeRoot) {
-    const rootFile = await getWakaRootFile(cwd, {
+    const rootFile = await getWakaRootFile(repoRootDir, {
       ensureExists: opts?.ensureExists,
     });
     allPackageFiles.push(rootFile);
@@ -151,14 +152,14 @@ export async function getWakaPackageFiles(
 }
 
 export async function getNPMPackageFiles(
-  cwd: string,
+  repoRootDir: string,
   opts?: { ensureExists?: boolean; includeRoot?: boolean }
 ) {
-  const packageDirs = await getAllPackageDirectories(cwd, {
+  const packageDirs = await getAllPackageDirectories(repoRootDir, {
     includeRoot: opts?.includeRoot ?? false,
   });
   const pkgFilePromises = packageDirs.map(async (p) => {
-    const f = await getNPMPackageFile(path.join(cwd, p), opts);
+    const f = await getNPMPackageFile(path.join(repoRootDir, p), opts);
     return f;
   });
   return (await Promise.all(pkgFilePromises)).filter((f) => !!f);
@@ -176,18 +177,18 @@ export async function getNPMPackageJsonContents(packageDir: string) {
 }
 
 export function getRootNPMPackageFile(
-  cwd: string,
+  repoRootDir: string,
   opts?: { ensureExists: boolean }
 ): Promise<string> {
-  const rootFile = path.join(cwd, 'package.json');
+  const rootFile = path.join(repoRootDir, 'package.json');
   if (opts?.ensureExists && !fs.existsSync(rootFile)) {
     throw new Error(`File ${rootFile} does not exist.`);
   }
   return Promise.resolve(rootFile);
 }
 
-export async function getWakaRoot(cwd: string): Promise<Root> {
-  const rootFile = await getWakaRootFile(cwd, { ensureExists: true });
+export async function getWakaRoot(repoRootDir: string): Promise<Root> {
+  const rootFile = await getWakaRootFile(repoRootDir, { ensureExists: true });
   const rawData = fs.readFileSync(rootFile, 'utf8');
   const root = yaml.load(rawData);
   const rootParsed = rootSchema.parse(root);
@@ -207,9 +208,11 @@ export async function getWakaPackage(
   return pkgParsed;
 }
 export async function getWakaPackages(
-  cwd: string
+  repoRootDir: string
 ): Promise<Record<string, Package>> {
-  const packageFiles = await getWakaPackageFiles(cwd, { ensureExists: true });
+  const packageFiles = await getWakaPackageFiles(repoRootDir, {
+    ensureExists: true,
+  });
   return (
     await Promise.all<Record<string, Package>>(
       packageFiles.map(async (p) => {
@@ -228,21 +231,21 @@ export async function getWakaPackages(
 }
 
 export async function getNPMPackageDetails(
-  cwd: string,
+  repoRootDir: string,
   opts?: { includeRoot: boolean }
 ) {
-  const pkgJsons = await getNPMPackageFiles(cwd, {
+  let pkgJsons = await getNPMPackageFiles(repoRootDir, {
     ensureExists: true,
     includeRoot: false,
   });
   if (opts?.includeRoot) {
-    const rootPkgJsons = await getRootNPMPackageFile(cwd, {
+    const rootPkgJson = await getRootNPMPackageFile(repoRootDir, {
       ensureExists: true,
     });
-    pkgJsons.push(rootPkgJsons);
+    pkgJsons = [...pkgJsons, rootPkgJson];
   }
-  const promises = pkgJsons.flatMap(async (p) => {
-    const details: PackageDetail[] = [];
+  const details: PackageDetail[] = [];
+  for (const p of pkgJsons) {
     const pkgJsonData = await getNPMPackageJsonContents(p);
     npmDepTypes.forEach((depType: NPMDepType) => {
       const deps = pkgJsonData[depType];
@@ -258,16 +261,17 @@ export async function getNPMPackageDetails(
         });
       }
     });
-    return details;
-  });
-  return (await Promise.all(promises)).flat();
+  }
+  return details;
 }
+
 export function getDetailKey(
   detail: PackageDetail,
   mapBy: (keyof PackageDetail)[] = ['name']
 ) {
   return mapBy.map((mapByKey) => detail[mapByKey]).join('|');
 }
+
 export function mapNPMPackageDetails(
   details: PackageDetail[],
   mapBy: (keyof PackageDetail)[] = ['name']
@@ -284,4 +288,34 @@ export function mapNPMPackageDetails(
     {} as Record<string, PackageDetail[]>
   );
   return m;
+}
+
+export async function parseWorkspaceDir(
+  repoRootDir: string,
+  currentDir: string,
+  packageNameOrRelativePath?: string | undefined | null
+) {
+  const isSub = isSubDirOfMonoRepo(currentDir);
+  const isRoot = isMonoRepoRoot(currentDir);
+  if ((packageNameOrRelativePath ?? '') === '') {
+    if (isSub && !isRoot) {
+      return currentDir;
+    }
+    return repoRootDir;
+  }
+
+  const fullPath = path.resolve(
+    path.join(repoRootDir, packageNameOrRelativePath!)
+  );
+  if (fs.existsSync(fullPath)) {
+    return fullPath;
+  }
+
+  if (packageNameOrRelativePath ?? '' !== '') {
+    const dir = await getNPMPackageDir(packageNameOrRelativePath!, repoRootDir);
+    return dir;
+  }
+  throw new Error(
+    `Could not determine package directory for ${packageNameOrRelativePath} or ${currentDir}`
+  );
 }

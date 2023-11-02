@@ -174,22 +174,24 @@ export interface ImportOptions {
   registerAll?: boolean;
 }
 
-export async function importFn(cwd: string, opts: ImportOptions) {
-  const wakaRoot = await getWakaRoot(cwd);
-  const wakaPackages = await getWakaPackages(cwd);
+export async function importFn(repoRootDir: string, opts: ImportOptions) {
+  const wakaRoot = await getWakaRoot(repoRootDir);
+  const wakaPackages = await getWakaPackages(repoRootDir);
 
-  const npmPackageDetails = await getNPMPackageDetails(cwd);
+  const npmPackageDetails = await getNPMPackageDetails(repoRootDir, {
+    includeRoot: true,
+  });
   const { wakaRoot: newWakaRoot, wakaPackages: newWakaPackages } =
     await organizeDependencies(wakaRoot, wakaPackages, npmPackageDetails, opts);
-  const rootFile = await getWakaRootFile(cwd, { ensureExists: false });
-  const rootPackageJson = await getNPMPackageFile(cwd);
+  const rootFile = await getWakaRootFile(repoRootDir, { ensureExists: false });
+  const rootPackageJson = await getNPMPackageFile(repoRootDir);
   const rootPackageName = getNPMPackageName(rootPackageJson);
   const newRootPackage = wakaPackages[rootPackageName];
 
   await writeWakaRoot(rootFile, { ...newWakaRoot, ...newRootPackage });
   const packageNames = Object.keys(newWakaPackages);
   for (const p of packageNames) {
-    const packageDir = await getNPMPackageDir(p, cwd);
+    const packageDir = await getNPMPackageDir(p, repoRootDir);
     const wakaPackageYaml = await getWakaPackageFile(packageDir, {
       ensureExists: false,
     });

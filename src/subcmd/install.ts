@@ -1,29 +1,16 @@
-import fs from 'fs';
-import path from 'path';
 import {
-  getNPMPackageDir,
   getWakaPackage,
   getWakaPackageFile,
   getWakaRoot,
   getWakaRootFile,
+  parseWorkspaceDir,
   writeWakaPackage,
   writeWakaRoot,
 } from '../package';
 import type { Dependency, NPMDepType, Package, Root } from '../schema';
 import { ROOT_REGISTRY_VERSION } from '../schema';
 import { getLatestVersion } from '../npmjs';
-
-async function parseWorkspaceDir(cwd: string, workspace: string | undefined) {
-  if ((workspace ?? '') === '') {
-    return null;
-  }
-  const fullPath = path.resolve(path.join(cwd, workspace!));
-  if (!fs.existsSync(fullPath)) {
-    const dir = await getNPMPackageDir(workspace!, cwd);
-    return dir;
-  }
-  return fullPath;
-}
+import { cwd, isMonoRepoRoot } from '../file';
 
 function parsePackageAndVersion(packageName: string): {
   name: string;
@@ -75,38 +62,48 @@ export interface InstallOptions {
   packageName: string;
   noRegister?: boolean;
 }
+
 function updatePackage<T extends Package>({
+  wakaRoot,
   wakaPackage,
   depType,
   packageName,
   version,
   noRegister,
 }: {
+  wakaRoot: Root;
   wakaPackage: T;
   depType: NPMDepType;
   packageName: string;
   version: string;
   noRegister: boolean;
-}): T {
+}): { wakaRoot: Root; wakaPackage: T } {
   if (!wakaPackage[depType]) {
     wakaPackage[depType] = {} as Record<string, Dependency>;
   }
-  wakaPackage[depType]![packageName] = noRegister
-    ? version
-    : ROOT_REGISTRY_VERSION;
-  return wakaPackage;
+  if (!noRegister) {
+    wakaPackage[depType]![packageName] = ROOT_REGISTRY_VERSION;
+    wakaRoot.rootDepRegistry[packageName] = version;
+  } else {
+    // if we have been told not to register or
+    // the registry already has a version of this dependency, then don't register
+    // just add the version to the package
+    wakaPackage[depType]![packageName] = version;
+  }
+
+  return { wakaRoot, wakaPackage };
 }
 
-export async function installFn(cwd: string, opts: InstallOptions) {
+export async function installFn(repoRootDir: string, opts: InstallOptions) {
   const { workspace, packageName } = opts;
 
-  let workspaceDir = await parseWorkspaceDir(cwd, workspace);
+  let workspaceDir = await parseWorkspaceDir(repoRootDir, cwd, workspace);
   const depType = getDepType(opts);
-  const wakaRoot = await getWakaRoot(cwd);
+  const wakaRoot = await getWakaRoot(repoRootDir);
   let targetIsRoot = false;
-  if (!workspaceDir) {
+  if (isMonoRepoRoot(workspaceDir)) {
     targetIsRoot = true;
-    workspaceDir = cwd;
+    workspaceDir = repoRootDir;
   }
 
   const parsedPackage = parsePackageAndVersion(packageName);
@@ -129,22 +126,23 @@ Otherwise, run again without a version to install the root-version`);
     );
   }
 
-  if (!opts.noRegister || wakaRoot.rootDepRegistry[parsedPackage.name]) {
+  if (!opts.noRegister) {
     console.log('registering to root registry');
     wakaRoot.rootDepRegistry[parsedPackage.name] = parsedPackage.version;
   } else {
     console.log('not registering to root registry');
   }
+  const rootFile = await getWakaRootFile(repoRootDir);
   if (targetIsRoot) {
     console.log('installing to root');
-    const newWakaRoot = updatePackage<Root>({
+    const { wakaRoot: newWakaRoot } = updatePackage<Root>({
+      wakaRoot,
       wakaPackage: wakaRoot,
       depType,
       packageName: parsedPackage.name,
       version: parsedPackage.version,
       noRegister: opts.noRegister ?? false,
     });
-    const rootFile = await getWakaRootFile(cwd);
     console.log(`writing to ${rootFile}`);
     await writeWakaRoot(rootFile, newWakaRoot);
   } else {
@@ -153,14 +151,17 @@ Otherwise, run again without a version to install the root-version`);
       ensureExists: true,
     });
     const wakaPackage = await getWakaPackage(workspaceDir);
-    const newWakaPackage = updatePackage<Package>({
-      wakaPackage,
-      depType,
-      packageName: parsedPackage.name,
-      version: parsedPackage.version,
-      noRegister: opts.noRegister ?? false,
-    });
+    const { wakaRoot: newWakaRoot, wakaPackage: newWakaPackage } =
+      updatePackage<Package>({
+        wakaRoot,
+        wakaPackage,
+        depType,
+        packageName: parsedPackage.name,
+        version: parsedPackage.version,
+        noRegister: opts.noRegister ?? false,
+      });
     console.log(`writing to ${wakaPackageFile}`);
     await writeWakaPackage(wakaPackageFile, newWakaPackage);
+    await writeWakaPackage(rootFile, newWakaRoot);
   }
 }

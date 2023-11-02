@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getNPMPackageDir } from './package';
 export const cwd = process.cwd();
 
 export function toDirectoryOnly(p: string): string {
@@ -46,5 +47,34 @@ export function identifyRootDir(
     return lastProjectDir;
   }
   return identifyRootDir(path.join(currntDir, '..'), currntDir);
+}
+
+export async function parseWorkspaceDir(
+  repoRootDir: string,
+  packageNameOrRelativePath?: string | undefined | null
+) {
+  const isSub = isSubDirOfMonoRepo(cwd);
+  const isRoot = isMonoRepoRoot(cwd);
+  if ((packageNameOrRelativePath ?? '') === '') {
+    if (isSub && !isRoot) {
+      return cwd;
+    }
+    return repoRootDir;
+  }
+
+  const fullPath = path.resolve(
+    path.join(repoRootDir, packageNameOrRelativePath!)
+  );
+  if (fs.existsSync(fullPath)) {
+    return fullPath;
+  }
+
+  if (packageNameOrRelativePath ?? '' !== '') {
+    const dir = await getNPMPackageDir(packageNameOrRelativePath!, repoRootDir);
+    return dir;
+  }
+  throw new Error(
+    `Could not determine package directory for ${packageNameOrRelativePath} or ${cwd}`
+  );
 }
 // export const rootDir = identifyRootDir();

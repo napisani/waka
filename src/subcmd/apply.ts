@@ -62,14 +62,14 @@ async function writeApplication(
   await writePackageJson(packageJsonFile, packageJsonContents);
 }
 
-export async function applyFn(cwd: string) {
-  const wakaRoot = await getWakaRoot(cwd);
-  const wakaPackages = await getWakaPackages(cwd);
+export async function applyFn(repoRootDir: string) {
+  const wakaRoot = await getWakaRoot(repoRootDir);
+  const wakaPackages = await getWakaPackages(repoRootDir);
 
-  const rootPackageJson = await applyToPackage(wakaRoot, cwd, wakaRoot);
+  const rootPackageJson = await applyToPackage(wakaRoot, repoRootDir, wakaRoot);
   const packageDirToJsonContents = await Promise.all(
     Object.entries(wakaPackages).map(async ([packageName, wakaPackage]) => {
-      const packageDir = await getNPMPackageDir(packageName, cwd);
+      const packageDir = await getNPMPackageDir(packageName, repoRootDir);
       const content = await applyToPackage(wakaRoot, packageDir, wakaPackage);
       return Promise.all([packageDir, content]);
     })
@@ -79,5 +79,5 @@ export async function applyFn(cwd: string) {
       await writeApplication(packageDir, packageJsonContents);
     })
   );
-  await writeApplication(cwd, rootPackageJson);
+  await writeApplication(repoRootDir, rootPackageJson);
 }

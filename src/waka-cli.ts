@@ -38,9 +38,9 @@ const importCmd = command({
       long: 'accept-latest',
     }),
   },
-  handler: async () => {
+  handler: async (args) => {
     process.chdir(rootDir);
-    await importFn(rootDir);
+    await importFn(rootDir, args);
   },
 });
 

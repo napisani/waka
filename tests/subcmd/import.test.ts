@@ -33,6 +33,7 @@ describe('importFn', () => {
     const wakaRoot = await getWakaRoot(mockRepoDir);
     const wakaWebPkg = await getWakaPackage(path.join(mockRepoDir, 'apps/web'));
     expect(wakaRoot.rootDepRegistry.next).toEqual('^13.4.19');
+    expect(wakaRoot.rootDepRegistry.prettier).toEqual('^3.0.3');
     expect(wakaWebPkg.dependencies!.next).toEqual(ROOT_REGISTRY_VERSION);
     const pkgJsonContents = await getNPMPackageJsonContents(
       await getNPMPackageFile(path.join(mockRepoDir, 'apps/web'))

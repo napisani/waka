@@ -10,8 +10,8 @@ import {
 import type { Package, Root } from '../schema';
 import { defaultWakaPackage, defaultWakaRoot } from '../schema';
 
-async function generateRootWakaFile(cwd: string) {
-  const rootFile = await getWakaRootFile(cwd);
+async function generateRootWakaFile(repoRootDir: string) {
+  const rootFile = await getWakaRootFile(repoRootDir);
   if (fs.existsSync(rootFile)) {
     console.log(`Root file already exists: ${rootFile} -- skipping`);
     return rootFile;
@@ -21,8 +21,8 @@ async function generateRootWakaFile(cwd: string) {
   return rootFile;
 }
 
-async function generatePackageWakaFile(cwd: string, packageDir: string) {
-  const pkgFile = await getWakaPackageFile(path.join(cwd, packageDir));
+async function generatePackageWakaFile(repoRootDir: string, packageDir: string) {
+  const pkgFile = await getWakaPackageFile(path.join(repoRootDir, packageDir));
   if (fs.existsSync(pkgFile)) {
     console.log(`Package file already exists: ${pkgFile} -- skipping`);
     return pkgFile;
@@ -32,14 +32,14 @@ async function generatePackageWakaFile(cwd: string, packageDir: string) {
   return pkgFile;
 }
 
-export async function initFn(cwd: string) {
-  const rootFile = await generateRootWakaFile(cwd);
-  const packageDirs = await getAllPackageDirectories(cwd, {
+export async function initFn(repoRootDir: string) {
+  const rootFile = await generateRootWakaFile(repoRootDir);
+  const packageDirs = await getAllPackageDirectories(repoRootDir, {
     includeRoot: false,
   });
   const pkgFiles = await Promise.all(
     packageDirs.map(async (p) => {
-      await generatePackageWakaFile(cwd, p);
+      await generatePackageWakaFile(repoRootDir, p);
     })
   );
 

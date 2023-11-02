@@ -10,7 +10,7 @@
     "scripts": "./dist/**/*.js"
   },
   "scripts": {
-    "test": "jest --config ./jest.config.ts"
+    "test": "jest --config ./jest.config.ts --runInBand"
   },
   "keywords": [],
   "author": "Nick Pisani",
