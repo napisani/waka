@@ -11,7 +11,7 @@ import { identifyRootDir } from './file';
 import { importFn, applyFn, initFn, installFn } from './subcmd';
 import { ejectFn } from './subcmd/eject';
 const rootDir = identifyRootDir();
-const scriptCmd = 'pnpm run waka';
+const scriptCmd = 'waka-pm';
 
 const initCmd = command({
   name: 'init',

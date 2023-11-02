@@ -1,8 +1,9 @@
 {
-  "name": "waka",
+  "name": "waka-pm",
   "version": "1.0.0",
-  "description": "",
+  "description": "a pnpm supplement for enforcing consistent versions across all workspaces",
   "main": "dist/index.js",
+  "private": false,
   "bin": {
     "waka": "./dist/waka-cli.js"
   },
@@ -15,7 +16,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "jest --config ./jest.config.ts --runInBand"
   },
-  "keywords": [],
+  "keywords": ["pnpm", "workspace", "version", "monorepo", "management", "cli", "waka", "consistency"],
   "author": "Nick Pisani",
   "license": "ISC",
   "dependencies": {
