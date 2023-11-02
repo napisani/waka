@@ -1,0 +1,26 @@
+dependencies: {}
+devDependencies:
+  tsconfig: root-version
+  eslint: root-version
+  prettier: root-version
+  turbo: root-version
+peerDependencies: {}
+optionalDependencies: {}
+rootDepRegistry:
+  next: ^13.4.19
+  react: ^18.2.0
+  react-dom: ^18.2.0
+  ui: workspace:*
+  "@next/eslint-plugin-next": ^13.4.19
+  "@types/node": 20.5.2
+  "@types/react": 18.2.0
+  "@types/react-dom": 18.2.0
+  eslint-config-custom: workspace:*
+  tsconfig: workspace:*
+  typescript: 4.5.3
+  "@vercel/style-guide": ^5.0.0
+  eslint-config-turbo: ^1.10.12
+  "@turbo/gen": ^1.10.12
+  eslint: ^8.48.0
+  prettier: ^3.0.3
+  turbo: latest
