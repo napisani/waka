@@ -1,15 +1,10 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { exec } from 'shelljs';
-import { initFn, installFn } from '../../src';
-import {
-  getWakaPackage,
-  getWakaPackageFiles,
-  getWakaRoot,
-} from '../../src/package';
-import { ROOT_REGISTRY_VERSION } from '../../src/schema';
-import { importFn } from '../../src/subcmd/import';
+import { initFn } from '../../src';
+import { getWakaPackageFiles } from '../../src/package';
 import { ejectFn } from '../../src/subcmd/eject';
+import { importFn } from '../../src/subcmd/import';
 
 const mockRepoDir = path.resolve(path.join(__dirname, '../../mocks/mock-mono'));
 function cleanUp() {
