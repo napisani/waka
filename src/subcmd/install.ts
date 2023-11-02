@@ -122,7 +122,8 @@ export async function installFn(repoRootDir: string, opts: InstallOptions) {
   if (
     wakaRoot.hasRegisteredDep(parsedPackage.name) &&
     !opts.noRegister &&
-    parsedPackage.version
+    parsedPackage.version &&
+    wakaRoot.getRegisteredDepVersion(parsedPackage.name) !== parsedPackage.version
   ) {
     throw new Error(`Package ${parsedPackage.name} already registered in root. 
 Use --no-register to install this different version to this workspace. 
