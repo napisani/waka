@@ -1,6 +1,6 @@
 {
   "name": "waka-pm",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "a pnpm supplement for enforcing consistent versions across all workspaces",
   "main": "cli.js",
   "private": false,
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/napisani/waka#readme",
   "scripts": {
+    "precommit": "pnpm run lint:fix && pnpm run build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "build": "tsc -p tsconfig.build.json",

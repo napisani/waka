@@ -1,4 +1,6 @@
 import select from '@inquirer/select';
+import semverCoerce from 'semver/functions/coerce';
+import semverSort from 'semver/functions/sort';
 import {
   getNPMPackageDetails,
   getNPMPackageDir,
@@ -6,27 +8,19 @@ import {
   getNPMPackageName,
   getWakaPackageDocuments,
   getWakaPackageFile,
-  getWakaPackages,
-  getWakaRoot,
   getWakaRootDocument,
   getWakaRootFile,
   mapNPMPackageDetails,
-  writeWakaPackage,
   writeWakaPackageDocument,
-  writeWakaRoot,
   writeWakaRootDocument,
 } from '../package';
 import type {
   NPMDepType,
-  Package,
   PackageDetail,
   PackageDocument,
-  Root,
   RootDocument,
 } from '../schema';
-import { ROOT_REGISTRY_VERSION, defaultWakaPackage } from '../schema';
-import semverSort from 'semver/functions/sort';
-import semverCoerce from 'semver/functions/coerce';
+import { ROOT_REGISTRY_VERSION } from '../schema';
 
 async function promptForRootRegVersionSelect(
   name: string,

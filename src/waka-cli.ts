@@ -46,9 +46,15 @@ const importCmd = command({
 const applyCmd = command({
   name: 'apply',
   description: 'Apply waka.yaml files to package.json files',
-  args: {},
-  handler: async () => {
-    await applyFn(rootDir);
+  args: {
+    noSkipCI: flag({
+      description:
+        'do not skip applying waka changes when the CI environment variable is set to true',
+      long: 'no-skip-ci',
+    }),
+  },
+  handler: async (args) => {
+    await applyFn(rootDir, args);
   },
 });
 

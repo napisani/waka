@@ -61,8 +61,15 @@ async function writeApplication(
   const packageJsonFile = await getNPMPackageFile(packageDir);
   await writePackageJson(packageJsonFile, packageJsonContents);
 }
-
-export async function applyFn(repoRootDir: string) {
+export interface ApplyOptions {
+  noSkipCI?: boolean;
+}
+export async function applyFn(repoRootDir: string, opts: ApplyOptions) {
+  const skipIfCI = !opts?.noSkipCI;
+  if (skipIfCI && ['true', '1'].includes(process.env.CI?.toLowerCase() ?? '')) {
+    console.log('Skipping apply on CI.');
+    return;
+  }
   const wakaRoot = await getWakaRoot(repoRootDir);
   const wakaPackages = await getWakaPackages(repoRootDir);
 

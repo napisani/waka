@@ -1,27 +1,16 @@
+import { cwd, isMonoRepoRoot } from '../file';
+import { getLatestVersion } from '../npmjs';
 import {
-  getWakaPackage,
   getWakaPackageDocument,
   getWakaPackageFile,
-  getWakaRoot,
   getWakaRootDocument,
   getWakaRootFile,
   parseWorkspaceDir,
-  writeWakaPackage,
   writeWakaPackageDocument,
-  writeWakaRoot,
   writeWakaRootDocument,
 } from '../package';
-import type {
-  Dependency,
-  NPMDepType,
-  Package,
-  PackageDocument,
-  Root,
-  RootDocument,
-} from '../schema';
+import type { NPMDepType, PackageDocument, RootDocument } from '../schema';
 import { ROOT_REGISTRY_VERSION } from '../schema';
-import { getLatestVersion } from '../npmjs';
-import { cwd, isMonoRepoRoot } from '../file';
 
 function parsePackageAndVersion(packageName: string): {
   name: string;
@@ -123,7 +112,8 @@ export async function installFn(repoRootDir: string, opts: InstallOptions) {
     wakaRoot.hasRegisteredDep(parsedPackage.name) &&
     !opts.noRegister &&
     parsedPackage.version &&
-    wakaRoot.getRegisteredDepVersion(parsedPackage.name) !== parsedPackage.version
+    wakaRoot.getRegisteredDepVersion(parsedPackage.name) !==
+      parsedPackage.version
   ) {
     throw new Error(`Package ${parsedPackage.name} already registered in root. 
 Use --no-register to install this different version to this workspace. 

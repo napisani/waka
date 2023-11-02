@@ -34,10 +34,23 @@ describe('importFn', () => {
     const wakaRoot = await getWakaRoot(mockRepoDir);
     wakaRoot.rootDepRegistry.next = '^14.0.0';
     await writeWakaRoot(wakaRootFile, wakaRoot);
-    await applyFn(mockRepoDir);
+    await applyFn(mockRepoDir, {});
     const pkgJsonContents = await getNPMPackageJsonContents(
       await getNPMPackageFile(path.join(mockRepoDir, 'apps/web'))
     );
     expect(pkgJsonContents.dependencies!.next).toEqual('^14.0.0');
+  });
+
+  it('applying an update to the waka files should be a noop if the CI envvar is true', async () => {
+    const wakaRootFile = await getWakaRootFile(mockRepoDir);
+    const wakaRoot = await getWakaRoot(mockRepoDir);
+    wakaRoot.rootDepRegistry.next = '^14.0.0';
+    await writeWakaRoot(wakaRootFile, wakaRoot);
+    process.env.CI = 'true';
+    await applyFn(mockRepoDir, {});
+    const pkgJsonContents = await getNPMPackageJsonContents(
+      await getNPMPackageFile(path.join(mockRepoDir, 'apps/web'))
+    );
+    expect(pkgJsonContents.dependencies!.next).toEqual('^13.4.19');
   });
 });

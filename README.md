@@ -76,10 +76,10 @@ The `--register-all` flag registers all dependencies in the root registry, while
 To apply changes from Waka YAML files to your `package.json` files, use the `apply` command:
 
 ```
-waka apply
+waka apply [--no-skip-ci]
 ```
 
-This command will update the `package.json` files based on the information specified in the Waka YAML files.
+This command will update the `package.json` files based on the information specified in the Waka YAML files. 
 
 ### Install New Dependencies
 

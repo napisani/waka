@@ -1,5 +1,5 @@
+import type { Document, YAMLMap } from 'yaml';
 import { z } from 'zod';
-import type { Document, YAMLMap, Pair } from 'yaml';
 export const INNER_PACKAGE_REF = '*';
 export const ROOT_REGISTRY_VERSION = 'root-version';
 
@@ -66,7 +66,7 @@ export class PackageDocument {
     return new PackageDocument(content);
   }
 
-  protected constructor(public content: Document) { }
+  protected constructor(public content: Document) {}
 
   hasDependency(name: string, type: NPMDepType = 'dependencies'): boolean {
     const deps = this.content.get(type) as YAMLMap;
