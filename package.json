@@ -1,11 +1,11 @@
 {
   "name": "waka-pm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a pnpm supplement for enforcing consistent versions across all workspaces",
   "main": "dist/index.js",
   "private": false,
   "bin": {
-    "waka": "./dist/waka-cli.js"
+    "waka-pm": "./dist/waka-cli.js"
   },
   "pkg": {
     "scripts": "./dist/**/*.js"
@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "build": "tsc -p tsconfig.build.json",
+    "buildProd": "tsc -p tsconfig.build.json",
     "test": "jest --config ./jest.config.ts --runInBand"
   },
   "keywords": ["pnpm", "workspace", "version", "monorepo", "management", "cli", "waka", "consistency"],
