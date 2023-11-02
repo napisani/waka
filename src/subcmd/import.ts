@@ -4,15 +4,26 @@ import {
   getNPMPackageDir,
   getNPMPackageFile,
   getNPMPackageName,
+  getWakaPackageDocuments,
   getWakaPackageFile,
   getWakaPackages,
   getWakaRoot,
+  getWakaRootDocument,
   getWakaRootFile,
   mapNPMPackageDetails,
   writeWakaPackage,
+  writeWakaPackageDocument,
   writeWakaRoot,
+  writeWakaRootDocument,
 } from '../package';
-import type { NPMDepType, Package, PackageDetail, Root } from '../schema';
+import type {
+  NPMDepType,
+  Package,
+  PackageDetail,
+  PackageDocument,
+  Root,
+  RootDocument,
+} from '../schema';
 import { ROOT_REGISTRY_VERSION, defaultWakaPackage } from '../schema';
 import semverSort from 'semver/functions/sort';
 import semverCoerce from 'semver/functions/coerce';
@@ -73,34 +84,36 @@ async function promptForRootRegVersionSelect(
 }
 
 async function organizeDependencies(
-  wakaRoot: Root,
-  wakaPackages: Record<string, Package>,
+  wakaRoot: RootDocument,
+  wakaPackages: Record<string, PackageDocument>,
   npmPackageDetails: PackageDetail[],
   opts: ImportOptions
-): Promise<{ wakaRoot: Root; wakaPackages: Record<string, Package> }> {
+): Promise<{
+  wakaRoot: RootDocument;
+  wakaPackages: Record<string, PackageDocument>;
+}> {
   function adjustWakaRootRegistryVersion(
     name: string,
     newVersion: string | null
   ) {
     if (!newVersion) {
-      if (wakaRoot.rootDepRegistry[name]) {
-        delete wakaRoot.rootDepRegistry[name];
+      if (wakaRoot.hasRegisteredDep(name)) {
+        wakaRoot.removeRegisteredDependency(name);
       }
       return wakaRoot;
     }
-    wakaRoot.rootDepRegistry[name] = newVersion;
+    wakaRoot.setRegisteredDependencyVersion(name, newVersion);
     return wakaRoot;
   }
 
   function adjustWakaPackageVersion(
-    packageName: string,
+    workspacePackageName: string,
     pkgName: string,
     newVersion: string,
     depType: NPMDepType
-  ): Package {
-    const wakaPackage = wakaPackages[packageName] ?? defaultWakaPackage;
-    const deps = wakaPackage[depType] ?? {};
-    deps[pkgName] = newVersion;
+  ): PackageDocument {
+    const wakaPackage = wakaPackages[workspacePackageName]!;
+    wakaPackage.setDependencyVersion(pkgName, newVersion, depType);
     return wakaPackage;
   }
 
@@ -174,29 +187,30 @@ export interface ImportOptions {
 }
 
 export async function importFn(repoRootDir: string, opts: ImportOptions) {
-  const wakaRoot = await getWakaRoot(repoRootDir);
-  const wakaPackages = await getWakaPackages(repoRootDir);
+  const wakaRoot = await getWakaRootDocument(repoRootDir);
+  const wakaPackages = await getWakaPackageDocuments(repoRootDir);
 
   const npmPackageDetails = await getNPMPackageDetails(repoRootDir, {
     includeRoot: true,
   });
+  const rootPackageJson = await getNPMPackageFile(repoRootDir);
+  const rootPackageName = getNPMPackageName(rootPackageJson);
+
+  // ensure the tha the rootPackageName in the map of packageNames -> wakaPackageDocuments points
+  // to the same exact object as wakaRoot
+  wakaPackages[rootPackageName] = wakaRoot;
+
   const { wakaRoot: newWakaRoot, wakaPackages: newWakaPackages } =
     await organizeDependencies(wakaRoot, wakaPackages, npmPackageDetails, opts);
   const rootFile = await getWakaRootFile(repoRootDir, { ensureExists: false });
-  const rootPackageJson = await getNPMPackageFile(repoRootDir);
-  const rootPackageName = getNPMPackageName(rootPackageJson);
-  const newRootPackage = wakaPackages[rootPackageName];
-
-  await writeWakaRoot(rootFile, { ...newWakaRoot, ...newRootPackage });
   const packageNames = Object.keys(newWakaPackages);
   for (const p of packageNames) {
     const packageDir = await getNPMPackageDir(p, repoRootDir);
     const wakaPackageYaml = await getWakaPackageFile(packageDir, {
       ensureExists: false,
     });
-    await writeWakaPackage(wakaPackageYaml, newWakaPackages[p]!);
+    await writeWakaPackageDocument(wakaPackageYaml, newWakaPackages[p]!);
   }
-
-  await writeWakaRoot(rootFile, newWakaRoot);
+  await writeWakaRootDocument(rootFile, newWakaRoot);
   console.log('all dependencies have been imported to waka yaml files');
 }

@@ -4,14 +4,20 @@ import {
 } from '@pnpm/filter-workspace-packages';
 import path from 'path';
 import fs from 'fs';
-import yaml from 'js-yaml';
-import { npmDepTypes, packageSchema, rootSchema } from '../schema';
+import yaml from 'yaml';
 import type {
   NPMDepType,
   Package,
   PackageDetail,
   PackageJsonContents,
   Root,
+} from '../schema';
+import {
+  npmDepTypes,
+  packageSchema,
+  rootSchema,
+  PackageDocument,
+  RootDocument,
 } from '../schema';
 import { isMonoRepoRoot, isSubDirOfMonoRepo } from '../file';
 const packageDirToNameCache = new Map<string, string>();
@@ -187,47 +193,98 @@ export function getRootNPMPackageFile(
   return Promise.resolve(rootFile);
 }
 
-export async function getWakaRoot(repoRootDir: string): Promise<Root> {
+async function getRawWakaRootYamlData(repoRootDir: string): Promise<string> {
   const rootFile = await getWakaRootFile(repoRootDir, { ensureExists: true });
   const rawData = fs.readFileSync(rootFile, 'utf8');
-  const root = yaml.load(rawData);
+  return rawData;
+}
+export async function getWakaRoot(repoRootDir: string): Promise<Root> {
+  const rawData = await getRawWakaRootYamlData(repoRootDir);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const root = yaml.parse(rawData);
   const rootParsed = rootSchema.parse(root);
   return rootParsed;
 }
 
-export async function getWakaPackage(
+export async function getWakaRootDocument(
+  repoRootDir: string
+): Promise<RootDocument> {
+  const rawData = await getRawWakaRootYamlData(repoRootDir);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const root = yaml.parse(rawData);
+  // still parse for validation purposes
+  rootSchema.parse(root);
+  const doc = yaml.parseDocument(rawData);
+  const rootParsed = RootDocument.instanceFromDocument(doc);
+  return rootParsed;
+}
+
+export async function getRawWakaPackageYamlData(
   packageDirectory: string
-): Promise<Package> {
+): Promise<string> {
   const packageDir = toDirectoryOnly(packageDirectory);
   const wakaPackageFile = await getWakaPackageFile(packageDir, {
     ensureExists: true,
   });
   const rawData = fs.readFileSync(wakaPackageFile, 'utf8');
-  const pkg = yaml.load(rawData);
+  return rawData;
+}
+export async function getWakaPackage(
+  packageDirectory: string
+): Promise<Package> {
+  const rawData = await getRawWakaPackageYamlData(packageDirectory);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const pkg = yaml.parse(rawData);
   const pkgParsed = packageSchema.parse(pkg);
   return pkgParsed;
 }
-export async function getWakaPackages(
-  repoRootDir: string
-): Promise<Record<string, Package>> {
+
+export async function getWakaPackageDocument(
+  packageDirectory: string
+): Promise<PackageDocument> {
+  const rawData = await getRawWakaPackageYamlData(packageDirectory);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const pkg = yaml.parse(rawData);
+  // still parse for validation purposes
+  packageSchema.parse(pkg);
+  const doc = yaml.parseDocument(rawData);
+  return PackageDocument.instanceFromDocument(doc);
+}
+
+async function getWakaPackagesInFormat<T = Package | PackageDocument>(
+  repoRootDir: string,
+  format: (filename: string) => Promise<T>
+): Promise<Record<string, T>> {
   const packageFiles = await getWakaPackageFiles(repoRootDir, {
     ensureExists: true,
   });
   return (
-    await Promise.all<Record<string, Package>>(
+    await Promise.all<Record<string, T>>(
       packageFiles.map(async (p) => {
         const packageDir = path.dirname(p);
         const packageJsonFile = await getNPMPackageFile(packageDir, {
           ensureExists: true,
         });
         const packageName = getNPMPackageName(packageJsonFile);
-        const pkgParsed = await getWakaPackage(packageDir);
+        const pkgParsed: T = await format(p);
         return { [packageName]: pkgParsed };
       })
     )
   ).reduce((acc, p) => {
     return { ...acc, ...p };
   }, {});
+}
+
+export async function getWakaPackages(
+  repoRootDir: string
+): Promise<Record<string, Package>> {
+  return getWakaPackagesInFormat(repoRootDir, getWakaPackage);
+}
+
+export async function getWakaPackageDocuments(
+  repoRootDir: string
+): Promise<Record<string, PackageDocument>> {
+  return getWakaPackagesInFormat(repoRootDir, getWakaPackageDocument);
 }
 
 export async function getNPMPackageDetails(

@@ -246,8 +246,6 @@ describe('Package Read', () => {
       const result = await getNPMPackageDetails(mockRepoDir, {
         includeRoot: false,
       });
-      console.log('hiiii');
-      console.log(result.map((p) => p.packageName));
 
       const expectedFromApp = {
         name: 'next',

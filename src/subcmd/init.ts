@@ -17,6 +17,7 @@ async function generateRootWakaFile(repoRootDir: string) {
     return rootFile;
   }
   const root: Root = defaultWakaRoot;
+  console.log(`Generating root waka file: ${rootFile}`);
   await writeWakaRoot(rootFile, root);
   return rootFile;
 }
@@ -31,24 +32,21 @@ async function generatePackageWakaFile(
     return pkgFile;
   }
   const pkg: Package = defaultWakaPackage;
+  console.log(`Generating package waka file: ${pkgFile}`);
   await writeWakaPackage(pkgFile, pkg);
   return pkgFile;
 }
 
 export async function initFn(repoRootDir: string) {
-  const rootFile = await generateRootWakaFile(repoRootDir);
+  await generateRootWakaFile(repoRootDir);
   const packageDirs = await getAllPackageDirectories(repoRootDir, {
     includeRoot: false,
   });
-  const pkgFiles = await Promise.all(
+  await Promise.all(
     packageDirs.map(async (p) => {
-      await generatePackageWakaFile(repoRootDir, p);
+      return generatePackageWakaFile(repoRootDir, p);
     })
   );
 
-  console.log(
-    `Initialized waka yaml files \nroot: ${rootFile} \npackages: ${pkgFiles.join(
-      '\n'
-    )}`
-  );
+  console.log(`Initialized all waka yaml files`);
 }
