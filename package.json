@@ -1,16 +1,25 @@
 {
   "name": "waka-pm",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "a pnpm supplement for enforcing consistent versions across all workspaces",
   "main": "cli.js",
   "private": false,
-  "files": ["dist", "cli.js", "README.md"], 
+  "files": [
+    "dist",
+    "cli.js",
+    "README.md"
+  ],
   "bin": {
     "waka-pm": "./cli.js"
   },
   "pkg": {
     "scripts": "./dist/**/*.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/napisani/waka.git"
+  },
+  "homepage": "https://github.com/napisani/waka#readme",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -18,7 +27,16 @@
     "buildProd": "tsc -p tsconfig.build.json",
     "test": "jest --config ./jest.config.ts --runInBand"
   },
-  "keywords": ["pnpm", "workspace", "version", "monorepo", "management", "cli", "waka", "consistency"],
+  "keywords": [
+    "pnpm",
+    "workspace",
+    "version",
+    "monorepo",
+    "management",
+    "cli",
+    "waka",
+    "consistency"
+  ],
   "author": "Nick Pisani",
   "license": "ISC",
   "dependencies": {
