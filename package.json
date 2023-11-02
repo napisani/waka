@@ -1,11 +1,11 @@
 {
   "name": "waka-pm",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "a pnpm supplement for enforcing consistent versions across all workspaces",
-  "main": "dist/index.js",
+  "main": "cli.js",
   "private": false,
   "bin": {
-    "waka-pm": "./dist/waka-cli.js"
+    "waka-pm": "./cli.js"
   },
   "pkg": {
     "scripts": "./dist/**/*.js"
