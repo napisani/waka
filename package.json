@@ -10,6 +10,8 @@
     "scripts": "./dist/**/*.js"
   },
   "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "build": "tsc -p tsconfig.build.json",
     "test": "jest --config ./jest.config.ts --runInBand"
   },

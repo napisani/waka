@@ -1,5 +1,4 @@
 import select from '@inquirer/select';
-import yaml from 'js-yaml';
 import {
   getNPMPackageDetails,
   getNPMPackageDir,

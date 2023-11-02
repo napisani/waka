@@ -73,6 +73,7 @@ const config = {
     "**/*.config.cjs",
     "packages/tailwind/**",
     "packages/eslint/**",
+    "mocks/**",
     ".next",
     "dist",
     "pnpm-lock.yaml",

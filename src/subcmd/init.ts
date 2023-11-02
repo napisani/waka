@@ -21,7 +21,10 @@ async function generateRootWakaFile(repoRootDir: string) {
   return rootFile;
 }
 
-async function generatePackageWakaFile(repoRootDir: string, packageDir: string) {
+async function generatePackageWakaFile(
+  repoRootDir: string,
+  packageDir: string
+) {
   const pkgFile = await getWakaPackageFile(path.join(repoRootDir, packageDir));
   if (fs.existsSync(pkgFile)) {
     console.log(`Package file already exists: ${pkgFile} -- skipping`);
