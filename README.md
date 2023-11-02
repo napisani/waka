@@ -1,7 +1,7 @@
-# Waka
+# waka-pm
 
-`waka` is a command-line interface tool that allows you to enforce consistencies throughout your pnpm monorepo.
-`waka` sibling waka-package/waka-root yaml files alongside every package.json within your monorepo. 
+`waka-pm` is a command-line interface tool that allows you to enforce consistencies throughout your pnpm monorepo.
+`waka-pm` sibling waka-package/waka-root yaml files alongside every package.json within your monorepo. 
 The waka yaml files can be used to define consistent dependency versions that could be installed 
 in any package withing your monorepo.
 Versions for the dependencies can be hoisted to the root waka file while dependency declarations can be localized in 
@@ -11,11 +11,41 @@ each respective package/app within the monorepo.
 
 To install Waka CLI, run the following command:
 
-```
-npm install -g @napisani/waka
+```bash
+npm install -g waka-pm
 ```
 
-Alternative you can use 
+Alternative you can use npx / pnpx:
+
+```bash
+pnpx waka-pm [subcommand]
+```
+
+
+## First time setup 
+
+First, run the `init`  subcommand to generate all of the waka files
+```bash
+cd /your/pnpm/project
+pnpx waka-pm init
+```
+
+Then, run import to import dependencies into `waka-pm` and interactively walk through all root dependency registrations.
+```bash
+pnpx waka-pm import
+```
+
+Finally, add this command to your `preinstall` script in your root package.json file
+```json
+{
+   "scripts": {
+        ...
+        "preinstall": "pnpx waka-pm apply"
+        ...
+    } 
+}
+```
+
 
 ## Usage
 
