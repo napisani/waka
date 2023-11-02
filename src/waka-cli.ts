@@ -9,6 +9,7 @@ import {
 } from 'cmd-ts';
 import { identifyRootDir } from './file';
 import { importFn, applyFn, initFn, installFn } from './subcmd';
+import { ejectFn } from './subcmd/eject';
 const rootDir = identifyRootDir();
 const scriptCmd = 'pnpm run waka';
 
@@ -17,7 +18,6 @@ const initCmd = command({
   description: 'Initialize waka yaml files within the monorepo',
   args: {},
   handler: async () => {
-    process.chdir(rootDir);
     await initFn(rootDir);
   },
 });
@@ -39,7 +39,6 @@ const importCmd = command({
     }),
   },
   handler: async (args) => {
-    process.chdir(rootDir);
     await importFn(rootDir, args);
   },
 });
@@ -49,7 +48,6 @@ const applyCmd = command({
   description: 'Apply waka.yaml files to package.json files',
   args: {},
   handler: async () => {
-    process.chdir(rootDir);
     await applyFn(rootDir);
   },
 });
@@ -91,10 +89,25 @@ const installCmd = command({
     }),
   },
   handler: async (args) => {
-    process.chdir(rootDir);
     await installFn(rootDir, args);
   },
 });
+
+const ejectCmd = command({
+  name: 'eject',
+  description: 'eject waka from the project, remove all waka configuration',
+  args: {
+    confirm: flag({
+      description: 'confirm the file removal',
+      long: 'confirm',
+      short: 'c',
+    }),
+  },
+  handler: async (args) => {
+    await ejectFn(rootDir, args);
+  },
+});
+
 const app = subcommands({
   name: scriptCmd,
   cmds: {
@@ -102,6 +115,7 @@ const app = subcommands({
     import: importCmd,
     apply: applyCmd,
     install: installCmd,
+    eject: ejectCmd,
   },
 });
 

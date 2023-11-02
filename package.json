@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "bin": {
-    "waka": "./dist/index.js"
+    "waka": "./dist/waka-cli.js"
   },
   "pkg": {
     "scripts": "./dist/**/*.js"
