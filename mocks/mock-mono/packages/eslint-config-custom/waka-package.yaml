@@ -1,9 +1,0 @@
-dependencies: {}
-devDependencies:
-  {
-    typescript: root-version,
-    "@vercel/style-guide": root-version,
-    eslint-config-turbo: root-version
-  }
-peerDependencies: {}
-optionalDependencies: {}
