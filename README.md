@@ -101,6 +101,118 @@ waka eject [--confirm]
 
 The `--confirm` flag confirms the removal of the Waka configuration files.
 
+
+
+
+# Definition of waka.config.js
+
+The `waka.config.js` file is used to define lifecycle hooks for Waka, allowing users to customize the behavior of the tool according to their specific needs. This readme will guide you on how to define the `waka.config.js` file.
+
+## File Location
+
+The `waka.config.js` file should be located in the root directory of your project. Otherwise, you can use the [--config-path] options on the applicable subcommands to define an alternate waka.config.js file path.
+
+## File Structure
+
+The `waka.config.js` file should export an object that adheres to the following structure:
+
+```javascript
+const config = {
+  installPreEvaluate: async (args) => {
+    // pre install code
+  },
+  installPreWrite: async (args) => {
+    // install pre-write code
+  },
+  installPostWrite: async (args) => {
+    // install post-write code
+  },
+  applyPreEvaluate: async (args) => {
+    // apply pre-evaluate code
+  },
+  applyPreWrite: async (args) => {
+    // apply pre-write code
+  },
+  applyPostWrite: async (args) => {
+    // apply post-write code
+  },
+};
+
+module.exports = config;
+```
+
+The `config` object consists of various lifecycle hook functions that will be executed at different stages of the Waka process. Each function is defined as an asynchronous function that takes specific arguments.
+
+## Lifecycle Hooks
+
+### installPreEvaluate
+
+The `installPreEvaluate` hook is executed before the installation process begins. It takes the following arguments:
+
+```javascript
+{
+  workspaceDir: string,
+  depType: string,
+  wakaRoot: RootDocument,
+  installPackageAndVersion: string
+}
+```
+
+### installPreWrite
+
+The `installPreWrite` hook is executed before writing the installation changes to the file system. It takes the following arguments:
+
+```javascript
+{
+  wakaRootFile: string,
+  workspaceDir: string,
+  depType: string,
+  wakaRoot: RootDocument,
+  wakaPackage?: PackageDocument,
+  wakaPackageFile?: string,
+  parsedPackageInfo: {
+    name: string,
+    version: string | null
+  }
+}
+```
+
+### installPostWrite
+
+The `installPostWrite` hook is executed after writing the installation changes to the file system. It takes the same arguments as `installPreWrite`.
+
+### applyPreEvaluate
+
+The `applyPreEvaluate` hook is executed before the apply process begins. It takes the following arguments:
+
+```javascript
+{
+  wakaRoot: Root,
+  wakaPackages: Record<string, Package>
+}
+```
+
+### applyPreWrite
+
+The `applyPreWrite` hook is executed before writing the apply changes to the file system. It takes the following arguments:
+
+```javascript
+{
+  wakaRoot: Root,
+  wakaPackages: Record<string, Package>,
+  packageDirToJsonContents: [string, PackageJsonContents][]
+}
+```
+
+### applyPostWrite
+
+The `applyPostWrite` hook is executed after writing the apply changes to the file system. It takes the same arguments as `applyPreWrite`.
+
+## Importing Additional Modules
+
+If you need to import additional modules in your `waka.config.js` file, you can do so using the `import` statement. However, keep in mind that the file should be transpiled using a tool like Babel to ensure compatibility with the Node.js runtime.
+
+
 ## Contributing
 
 Contributions are welcome! If you encounter any issues or have suggestions for improvements, 
