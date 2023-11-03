@@ -1,6 +1,6 @@
 {
   "name": "waka-pm",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "a pnpm supplement for enforcing consistent versions across all workspaces",
   "main": "cli.js",
   "private": false,
