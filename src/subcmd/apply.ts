@@ -1,3 +1,4 @@
+import { getExternalConfig } from '../ext-config';
 import {
   getNPMPackageDir,
   getNPMPackageFile,
@@ -63,6 +64,7 @@ async function writeApplication(
 }
 export interface ApplyOptions {
   noSkipCI?: boolean;
+  configPath?: string;
 }
 export async function applyFn(repoRootDir: string, opts: ApplyOptions) {
   const skipIfCI = !opts?.noSkipCI;
@@ -70,21 +72,41 @@ export async function applyFn(repoRootDir: string, opts: ApplyOptions) {
     console.log('Skipping apply on CI.');
     return;
   }
+  const extConfig = await getExternalConfig(repoRootDir, opts);
+
   const wakaRoot = await getWakaRoot(repoRootDir);
   const wakaPackages = await getWakaPackages(repoRootDir);
+  await extConfig?.applyPreEvaluate({
+    wakaRoot,
+    wakaPackages,
+  });
 
   const rootPackageJson = await applyToPackage(wakaRoot, repoRootDir, wakaRoot);
-  const packageDirToJsonContents = await Promise.all(
-    Object.entries(wakaPackages).map(async ([packageName, wakaPackage]) => {
-      const packageDir = await getNPMPackageDir(packageName, repoRootDir);
-      const content = await applyToPackage(wakaRoot, packageDir, wakaPackage);
-      return Promise.all([packageDir, content]);
-    })
-  );
+  const packageDirToJsonContents: [string, PackageJsonContents][] =
+    await Promise.all(
+      Object.entries(wakaPackages).map(async ([packageName, wakaPackage]) => {
+        const packageDir = await getNPMPackageDir(packageName, repoRootDir);
+        const content = await applyToPackage(wakaRoot, packageDir, wakaPackage);
+        return Promise.all([packageDir, content]);
+      })
+    );
+
+  await extConfig?.applyPreWrite({
+    wakaRoot,
+    wakaPackages,
+    packageDirToJsonContents,
+  });
+
   await Promise.all(
     packageDirToJsonContents.map(async ([packageDir, packageJsonContents]) => {
       await writeApplication(packageDir, packageJsonContents);
     })
   );
   await writeApplication(repoRootDir, rootPackageJson);
+
+  await extConfig?.applyPostWrite({
+    wakaRoot,
+    wakaPackages,
+    packageDirToJsonContents,
+  });
 }

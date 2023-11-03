@@ -1,3 +1,4 @@
+import { getExternalConfig } from '../ext-config';
 import { cwd, isMonoRepoRoot } from '../file';
 import { getLatestVersion } from '../npmjs';
 import {
@@ -61,6 +62,7 @@ export interface InstallOptions {
   saveOpt?: boolean;
   packageName: string;
   noRegister?: boolean;
+  configPath?: string;
 }
 
 function updatePackage<T extends PackageDocument>({
@@ -101,6 +103,15 @@ export async function installFn(repoRootDir: string, opts: InstallOptions) {
   let workspaceDir = await parseWorkspaceDir(repoRootDir, cwd, workspace);
   const depType = getDepType(opts);
   const wakaRoot = await getWakaRootDocument(repoRootDir);
+
+  const extConfig = await getExternalConfig(repoRootDir, opts);
+  await extConfig?.installPreEvaluate({
+    workspaceDir,
+    depType,
+    wakaRoot,
+    installPackageAndVersion: packageName,
+  });
+
   let targetIsRoot = false;
   if (isMonoRepoRoot(workspaceDir)) {
     targetIsRoot = true;
@@ -138,7 +149,7 @@ Otherwise, run again without a version to install the root-version`);
   } else {
     console.log('not registering to root registry');
   }
-  const rootFile = await getWakaRootFile(repoRootDir);
+  const wakaRootFile = await getWakaRootFile(repoRootDir);
   if (targetIsRoot) {
     console.log('installing to root');
     const { wakaRoot: newWakaRoot } = updatePackage<RootDocument>({
@@ -149,8 +160,26 @@ Otherwise, run again without a version to install the root-version`);
       version: parsedPackage.version,
       noRegister: opts.noRegister ?? false,
     });
-    console.log(`writing to ${rootFile}`);
-    await writeWakaRootDocument(rootFile, newWakaRoot);
+
+    await extConfig?.installPreWrite({
+      wakaRootFile,
+      workspaceDir,
+      depType,
+      wakaRoot: newWakaRoot,
+      parsedPackageInfo: parsedPackage,
+    });
+
+    console.log(`writing to ${wakaRootFile}`);
+
+    await writeWakaRootDocument(wakaRootFile, newWakaRoot);
+
+    await extConfig?.installPostWrite({
+      wakaRootFile,
+      workspaceDir,
+      depType,
+      wakaRoot: newWakaRoot,
+      parsedPackageInfo: parsedPackage,
+    });
   } else {
     console.log('installing to package');
     const wakaPackageFile = await getWakaPackageFile(workspaceDir, {
@@ -166,8 +195,31 @@ Otherwise, run again without a version to install the root-version`);
         version: parsedPackage.version,
         noRegister: opts.noRegister ?? false,
       });
+
+    await extConfig?.installPreWrite({
+      wakaRootFile,
+      wakaPackageFile,
+      workspaceDir,
+      depType,
+      wakaRoot: newWakaRoot,
+      wakaPackage: newWakaPackage,
+      parsedPackageInfo: parsedPackage,
+    });
+
     console.log(`writing to ${wakaPackageFile}`);
     await writeWakaPackageDocument(wakaPackageFile, newWakaPackage);
-    await writeWakaRootDocument(rootFile, newWakaRoot);
+
+    console.log(`writing to ${wakaRootFile}`);
+    await writeWakaRootDocument(wakaRootFile, newWakaRoot);
+
+    await extConfig?.installPostWrite({
+      wakaRootFile,
+      wakaPackageFile,
+      workspaceDir,
+      depType,
+      wakaRoot: newWakaRoot,
+      wakaPackage: newWakaPackage,
+      parsedPackageInfo: parsedPackage,
+    });
   }
 }

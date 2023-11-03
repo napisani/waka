@@ -4,6 +4,7 @@ import { initFn, installFn } from '../../src';
 import { getWakaPackage, getWakaRoot } from '../../src/package';
 import { ROOT_REGISTRY_VERSION } from '../../src/schema';
 import { importFn } from '../../src/subcmd/import';
+import * as extConfig from '../../src/ext-config';
 
 const mockRepoDir = path.resolve(path.join(__dirname, '../../mocks/mock-mono'));
 function cleanUp() {
@@ -126,5 +127,23 @@ describe('importFn', () => {
     const wakaRoot = await getWakaRoot(mockRepoDir);
     expect(wakaRoot.rootDepRegistry.prettier).toEqual('^3.0.3');
     expect(wakaRoot.devDependencies!.prettier).toEqual('^4.0.0');
+  });
+
+  it('install with an external config calls the correct lifecycle hooks', async () => {
+    const cfg = {
+      installPreEvaluate: jest.fn(),
+      installPreWrite: jest.fn(),
+      installPostWrite: jest.fn(),
+    };
+    // eslint-disable-next-line
+    jest.spyOn(extConfig, 'getExternalConfig').mockReturnValue(cfg as any);
+    await installFn(mockRepoDir, {
+      packageName: 'prettier@^4.0.0',
+      noRegister: true,
+      saveDev: true,
+    });
+    expect(cfg.installPreEvaluate).toHaveBeenCalled();
+    expect(cfg.installPreWrite).toHaveBeenCalled();
+    expect(cfg.installPostWrite).toHaveBeenCalled();
   });
 });

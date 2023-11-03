@@ -12,6 +12,13 @@ import { importFn, applyFn, initFn, installFn } from './subcmd';
 import { ejectFn } from './subcmd/eject';
 const rootDir = identifyRootDir();
 const scriptCmd = 'waka-pm';
+const configPath = option({
+  description: 'path to waka config file',
+  long: 'config',
+  short: 'c',
+  type: string,
+  defaultValue: () => '',
+});
 
 const initCmd = command({
   name: 'init',
@@ -47,6 +54,7 @@ const applyCmd = command({
   name: 'apply',
   description: 'Apply waka.yaml files to package.json files',
   args: {
+    configPath,
     noSkipCI: flag({
       description:
         'do not skip applying waka changes when the CI environment variable is set to true',
@@ -66,6 +74,7 @@ const installCmd = command({
       description: 'package to install',
       displayName: 'package',
     }),
+    configPath,
     workspace: option({
       description: 'workspace to install to',
       long: 'workspace',
