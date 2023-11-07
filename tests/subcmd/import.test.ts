@@ -6,6 +6,7 @@ import {
   getNPMPackageJsonContents,
   getWakaPackage,
   getWakaRoot,
+  writePackageJson,
 } from '../../src/package';
 import { initFn } from '../../src';
 import { ROOT_REGISTRY_VERSION } from '../../src/schema';
@@ -40,5 +41,30 @@ describe('importFn', () => {
       await getNPMPackageFile(path.join(mockRepoDir, 'apps/web'))
     );
     expect(pkgJsonContents.dependencies!.next).toEqual('^13.4.19');
+  });
+
+  it('importFn should import missing package.json contents into waka files upon second import attempt', async () => {
+    await importFn(mockRepoDir, {
+      registerAll: true,
+      acceptLatest: true,
+    });
+    const webPackageJsonFile = await getNPMPackageFile(
+      path.join(mockRepoDir, 'apps/web')
+    );
+
+    const pkgJsonContents = await getNPMPackageJsonContents(webPackageJsonFile);
+    expect(pkgJsonContents.dependencies!.next).toEqual('^13.4.19');
+
+    pkgJsonContents.dependencies!.glob = '10.3.10';
+    await writePackageJson(webPackageJsonFile, pkgJsonContents);
+    await importFn(mockRepoDir, {
+      registerAll: true,
+      acceptLatest: true,
+    });
+
+    const wakaRoot = await getWakaRoot(mockRepoDir);
+    const wakaWebPkg = await getWakaPackage(path.join(mockRepoDir, 'apps/web'));
+    expect(wakaRoot.rootDepRegistry.glob).toEqual('10.3.10');
+    expect(wakaWebPkg.dependencies!.glob).toEqual(ROOT_REGISTRY_VERSION);
   });
 });
