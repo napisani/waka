@@ -7,11 +7,11 @@ import {
   getNPMPackageFiles,
   getNPMPackageJsonContents,
   getNPMPackageName,
-  getPackagePathsFromPnpmSelector,
   getRootNPMPackageFile,
   getWakaPackageFile,
   getWakaPackageFiles,
   getWakaRootFile,
+  getWorkspaceDirectoryByPackage,
   parseWorkspaceDir,
 } from '../../src/package/read';
 const packageRelativePathes = [
@@ -23,16 +23,16 @@ const packageRelativePathes = [
 ];
 const mockRepoDir = path.resolve(path.join(__dirname, '../../mocks/mock-mono'));
 describe('Package Read', () => {
-  describe('getPackagePathsFromPnpmSelector', () => {
-    it('should return an array of package paths from pnpm selector', async () => {
+  describe('getWorkspaceDirectoryByPackage', () => {
+    it('should return package path', async () => {
       const selector = 'web';
 
-      const result = await getPackagePathsFromPnpmSelector(
-        selector,
-        mockRepoDir
+      const result = await getWorkspaceDirectoryByPackage(
+        mockRepoDir,
+        selector
       );
 
-      expect(result).toEqual(['apps/web']);
+      expect(result).toEqual('apps/web');
     });
   });
 
@@ -108,6 +108,7 @@ describe('Package Read', () => {
   describe('getWakaPackageFiles', () => {
     it('should return an array of waka-package.yaml files', async () => {
       const result = (await getWakaPackageFiles(mockRepoDir)).sort();
+      result.sort();
 
       const expected = [...packageRelativePathes]
         .map((p) => path.join(mockRepoDir, p, 'waka-package.yaml'))
@@ -119,6 +120,7 @@ describe('Package Read', () => {
       const result = await getWakaPackageFiles(mockRepoDir, {
         includeRoot: true,
       });
+      result.sort();
       const expected = [...packageRelativePathes]
         .map((p) => path.join(mockRepoDir, p, 'waka-package.yaml'))
         .sort();
@@ -133,6 +135,7 @@ describe('Package Read', () => {
   describe('getNPMPackageFiles', () => {
     it('should return an array of package.json files', async () => {
       const result = await getNPMPackageFiles(mockRepoDir);
+      result.sort();
 
       const expected = [...packageRelativePathes]
         .map((p) => path.join(mockRepoDir, p, 'package.json'))

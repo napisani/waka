@@ -4,6 +4,7 @@ import {
 } from '@pnpm/filter-workspace-packages';
 import path from 'path';
 import fs from 'fs';
+import { glob } from 'glob';
 import yaml from 'yaml';
 import type {
   NPMDepType,
@@ -22,6 +23,7 @@ import {
 import { isMonoRepoRoot, isSubDirOfMonoRepo } from '../file';
 const packageDirToNameCache = new Map<string, string>();
 const packageNameToDirCache = new Map<string, string>();
+let workspaceDirCache: Record<string, string>;
 
 function toDirectoryOnly(p: string): string {
   if (fs.existsSync(p) === false) {
@@ -32,39 +34,6 @@ function toDirectoryOnly(p: string): string {
     return p;
   }
   return path.dirname(p);
-}
-
-export async function getPackagePathsFromPnpmSelector(
-  selector: string,
-  repoRootDir: string
-): Promise<string[]> {
-  const projects = await readProjects(repoRootDir, [
-    parsePackageSelector(selector, repoRootDir),
-  ]);
-  return Object.keys(projects.selectedProjectsGraph).map((p) =>
-    path.relative(repoRootDir, p).replaceAll('\\', '/')
-  );
-}
-
-export async function getNPMPackageDir(
-  packageName: string,
-  repoRootDir: string
-): Promise<string> {
-  if (packageNameToDirCache.has(packageName)) {
-    return packageNameToDirCache.get(packageName)!;
-  }
-  const packageDirRelative = await getPackagePathsFromPnpmSelector(
-    packageName,
-    repoRootDir
-  );
-  if (!packageDirRelative || packageDirRelative.length === 0) {
-    throw new Error(`Package ${packageName} does not exist.`);
-  }
-  const dir = toDirectoryOnly(path.join(repoRootDir, packageDirRelative[0]!));
-  const packageDir = path.resolve(dir);
-  packageNameToDirCache.set(packageName, packageDir);
-  packageDirToNameCache.set(packageDir, packageName);
-  return packageDir;
 }
 
 export function getNPMPackageName(packageJsonFile: string): string {
@@ -86,11 +55,85 @@ export function getNPMPackageName(packageJsonFile: string): string {
   return pkgName;
 }
 
+export async function getWorkspaceDirectories(
+  repoRootDir: string
+): Promise<Record<string, string>> {
+  if (workspaceDirCache && Object.keys(workspaceDirCache).length > 0) {
+    return workspaceDirCache;
+  }
+
+  const pnpmWorkspaceYaml = path.join(repoRootDir, 'pnpm-workspace.yaml');
+  const rootPackageJson = path.join(repoRootDir, 'package.json');
+  let workspaceDirs: string[] = [];
+  if (fs.existsSync(pnpmWorkspaceYaml)) {
+    const rawData = fs.readFileSync(pnpmWorkspaceYaml, 'utf8');
+    workspaceDirs = (yaml.parse(rawData) as { packages: string[] }).packages;
+  } else if (fs.existsSync(rootPackageJson)) {
+    const rawData = fs.readFileSync(rootPackageJson, 'utf8');
+    workspaceDirs = (JSON.parse(rawData) as { workspaces: { packages: [] } })
+      .workspaces.packages;
+  } else {
+    throw new Error('No pnpm-workspace.yaml or root package.json found');
+  }
+  const workspacePackageJsons = workspaceDirs.map(
+    (dir) => `${repoRootDir}/${dir}/package.json`
+  );
+  const foundJsons = await glob(workspacePackageJsons, {
+    ignore: 'node_modules/**',
+  });
+  const foundDirs = foundJsons
+    .map((json) => {
+      const dir = path.relative(repoRootDir, path.dirname(json));
+      const pkgName = getNPMPackageName(json);
+      return { [pkgName]: dir };
+    })
+    .reduce((acc, p) => {
+      return { ...acc, ...p };
+    });
+  workspaceDirCache = foundDirs;
+  const rootName = getNPMPackageName(rootPackageJson);
+  workspaceDirCache[rootName] = '';
+  return foundDirs;
+}
+
+export async function getWorkspaceDirectoryByPackage(
+  repoRootDir: string,
+  packageName: string
+): Promise<string> {
+  const workspaces = await getWorkspaceDirectories(repoRootDir);
+  const workspace = workspaces[packageName];
+  if (!workspace) {
+    throw new Error(`Package ${packageName} does not exist.`);
+  }
+  return workspace;
+}
+
+export async function getNPMPackageDir(
+  packageName: string,
+  repoRootDir: string
+): Promise<string> {
+  if (packageNameToDirCache.has(packageName)) {
+    return packageNameToDirCache.get(packageName)!;
+  }
+  const packageDirRelative = await getWorkspaceDirectoryByPackage(
+    repoRootDir,
+    packageName
+  );
+  if (!packageDirRelative || packageDirRelative.length === 0) {
+    throw new Error(`Package ${packageName} does not exist.`);
+  }
+  const dir = toDirectoryOnly(path.join(repoRootDir, packageDirRelative[0]!));
+  const packageDir = path.resolve(dir);
+  packageNameToDirCache.set(packageName, packageDir);
+  packageDirToNameCache.set(packageDir, packageName);
+  return packageDir;
+}
+
 export async function getAllPackageDirectories(
   repoRootDir: string,
   opts?: { includeRoot: boolean }
 ) {
-  const packageDirs = await getPackagePathsFromPnpmSelector('*', repoRootDir);
+  const packageDirs = Object.values(await getWorkspaceDirectories(repoRootDir));
   if (opts?.includeRoot === false) {
     return packageDirs.filter((p) => p !== '' && p !== '.' && p !== './');
   }
