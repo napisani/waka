@@ -1,7 +1,3 @@
-import {
-  parsePackageSelector,
-  readProjects,
-} from '@pnpm/filter-workspace-packages';
 import path from 'path';
 import fs from 'fs';
 import { glob } from 'glob';
