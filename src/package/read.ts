@@ -75,7 +75,7 @@ export async function getWorkspaceDirectories(
     (dir) => `${repoRootDir}/${dir}/package.json`
   );
   const foundJsons = await glob(workspacePackageJsons, {
-    ignore: 'node_modules/**',
+    ignore: '**/node_modules/**',
   });
   const foundDirs = foundJsons
     .map((json) => {
@@ -115,10 +115,7 @@ export async function getNPMPackageDir(
     repoRootDir,
     packageName
   );
-  if (!packageDirRelative || packageDirRelative.length === 0) {
-    throw new Error(`Package ${packageName} does not exist.`);
-  }
-  const dir = toDirectoryOnly(path.join(repoRootDir, packageDirRelative[0]!));
+  const dir = toDirectoryOnly(path.join(repoRootDir, packageDirRelative));
   const packageDir = path.resolve(dir);
   packageNameToDirCache.set(packageName, packageDir);
   packageDirToNameCache.set(packageDir, packageName);

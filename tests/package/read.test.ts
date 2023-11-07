@@ -11,6 +11,7 @@ import {
   getWakaPackageFile,
   getWakaPackageFiles,
   getWakaRootFile,
+  getWorkspaceDirectories,
   getWorkspaceDirectoryByPackage,
   parseWorkspaceDir,
 } from '../../src/package/read';
@@ -33,6 +34,13 @@ describe('Package Read', () => {
       );
 
       expect(result).toEqual('apps/web');
+    });
+  });
+  describe('getAllPackageDirectories', () => {
+    it('should return all packageNames to relative paths', async () => {
+      const result = await getWorkspaceDirectories(mockRepoDir);
+
+      expect(Object.values(result).indexOf('apps/web')).toBeGreaterThan(-1);
     });
   });
 
