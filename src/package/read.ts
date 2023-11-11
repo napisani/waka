@@ -71,9 +71,9 @@ export async function getWorkspaceDirectories(
   } else {
     throw new Error('No pnpm-workspace.yaml or root package.json found');
   }
-  const workspacePackageJsons = workspaceDirs.map(
-    (dir) => `${repoRootDir}/${dir}/package.json`
-  );
+  const workspacePackageJsons = workspaceDirs
+    .filter((w) => !w.startsWith('!'))
+    .map((dir) => `${repoRootDir}/${dir}/package.json`);
   const foundJsons = await glob(workspacePackageJsons, {
     ignore: '**/node_modules/**',
   });
