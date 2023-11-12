@@ -71,12 +71,15 @@ export async function getWorkspaceDirectories(
   } else {
     throw new Error('No pnpm-workspace.yaml or root package.json found');
   }
-  const workspacePackageJsons = workspaceDirs
-    .filter((w) => !w.startsWith('!'))
-    .map((dir) => `${repoRootDir}/${dir}/package.json`);
-  const foundJsons = await glob(workspacePackageJsons, {
-    ignore: '**/node_modules/**',
-  });
+  const workspacePackageJsons = workspaceDirs.map(
+    (dir) => `${dir}/package.json`
+  );
+  const foundJsons = (
+    await glob(workspacePackageJsons, {
+      ignore: ['**/node_modules/**'],
+      cwd: repoRootDir,
+    })
+  ).map((p) => path.join(repoRootDir, p));
   const foundDirs = foundJsons
     .map((json) => {
       const dir = path.relative(repoRootDir, path.dirname(json));
